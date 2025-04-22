@@ -16,6 +16,7 @@ import (
 	"github.com/imrenagicom/demo-app/internal/config"
 	"github.com/imrenagicom/demo-app/internal/util"
 	v1 "github.com/imrenagicom/demo-app/pkg/apiclient/course/v1"
+	grpcutil "github.com/imrenagicom/demo-app/internal/grpc"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -116,7 +117,17 @@ func (s *Server) Run(ctx context.Context) error {
 }
 
 func (s *Server) newGRPCServer(ctx context.Context) *grpc.Server {
-	opts := []grpc.ServerOption{}
+	opts := []grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(
+			grpcutil.UnaryServerAppLoggerInterceptor(),
+			grpcutil.UnaryServerGRPCLoggerInterceptor(),
+		),
+		grpc.ChainStreamInterceptor(
+			grpcutil.StreamServerAppLoggerInterceptor(),
+			grpcutil.StreamServerGRPCLoggerInterceptor(),
+		),
+	}
+
 	grpcServer := grpc.NewServer(opts...)
 	bookingSrv := bookingsrv.New(s.bookingService)
 	catalogSrv := catalogsrv.New(s.catalogService)
